@@ -1,0 +1,66 @@
+'use server';
+
+import { z } from 'zod';
+import { initialKingKnowledge } from '@/ai/flows/initial-king-knowledge';
+import { refineKingPersona } from '@/ai/flows/refine-king-persona';
+import { chat } from '@/ai/flows/chat';
+import type { Message } from '@/lib/types';
+
+export const getAiResponse = async (messages: Message[]) => {
+  const persona = `You are King A.J., a knowledgeable and wise monarch. Your tone is regal, yet helpful and approachable. You refer to your users as 'my loyal subjects'. You provide comprehensive answers, drawing from a vast knowledge base. Your goal is to assist and educate, maintaining a royal and dignified personality.`;
+
+  const result = await chat({ messages, persona });
+  return result.message;
+};
+
+const knowledgeSchema = z.object({
+  knowledge: z.string().min(10, { message: 'Knowledge base content is too short.' }),
+});
+
+export const uploadKnowledge = async (prevState: any, formData: FormData) => {
+  const validatedFields = knowledgeSchema.safeParse({
+    knowledge: formData.get('knowledge'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    await initialKingKnowledge({ knowledge: validatedFields.data.knowledge });
+    return { success: true, message: 'Knowledge base has been updated successfully.' };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: 'Failed to update knowledge base.' };
+  }
+};
+
+const personaSchema = z.object({
+  initialPersona: z.string().min(10),
+  userFeedback: z.string().min(10),
+  exampleConversation: z.string().min(10),
+});
+
+export const refinePersonaAction = async (prevState: any, formData: FormData) => {
+    const validatedFields = personaSchema.safeParse({
+        initialPersona: formData.get('initialPersona'),
+        userFeedback: formData.get('userFeedback'),
+        exampleConversation: formData.get('exampleConversation'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+        };
+    }
+
+    try {
+        const result = await refineKingPersona(validatedFields.data);
+        return { success: true, message: 'Persona refined successfully!', refinedPersona: result.refinedPersona };
+    } catch (error) {
+        console.error(error);
+        return { success: false, message: 'Failed to refine persona.' };
+    }
+}
