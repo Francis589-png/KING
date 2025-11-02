@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "calculation": {
+      "title": "Calculation",
+      "description": "Represents a single calculation performed by the user.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of calculation.",
+          "enum": [
+            "base",
+            "text"
+          ]
+        },
+        "input": {
+          "type": "string",
+          "description": "The input for the calculation."
+        },
+        "output": {
+          "type": "string",
+          "description": "The result of the calculation."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the calculation was created."
+        }
+      },
+      "required": [
+        "type",
+        "input",
+        "output",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": []
+  },
+  "firestore": {
+    "/calculations/{calculationId}": {
+      "schema": {
+        "$ref": "#/entities/calculation"
+      },
+      "description": "Stores the history of calculations."
+    }
+  }
+}
