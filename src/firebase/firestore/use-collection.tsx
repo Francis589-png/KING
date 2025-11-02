@@ -1,6 +1,6 @@
 // src/firebase/firestore/use-collection.tsx
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import {
   onSnapshot,
   Query,
@@ -12,27 +12,14 @@ export function useCollection<T>(query: Query<DocumentData> | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const queryRef = useRef(query);
 
   useEffect(() => {
-    // If query is null, do nothing
     if (!query) {
       setData(null);
       setLoading(false);
       return;
     }
 
-    // Check if query has changed
-    if (
-      queryRef.current &&
-      JSON.stringify(queryRef.current) === JSON.stringify(query) && 
-      data
-    ) {
-      setLoading(false);
-      return;
-    }
-    
-    queryRef.current = query;
     setLoading(true);
 
     const unsubscribe = onSnapshot(
@@ -53,7 +40,7 @@ export function useCollection<T>(query: Query<DocumentData> | null) {
     );
 
     return () => unsubscribe();
-  }, [query, data]);
+  }, [query]);
 
   return { data, loading, error };
 }
