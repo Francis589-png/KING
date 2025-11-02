@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
 import ChatMessage from './chat-message';
@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, Timestamp, CollectionReference } from 'firebase/firestore';
 
 const kingAvatar = PlaceHolderImages.find((img) => img.id === 'king-avatar')?.imageUrl ?? '';
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar')?.imageUrl ?? '';
@@ -23,7 +23,7 @@ const initialMessage: Message = {
 };
 
 interface StoredMessage {
-    id?: string;
+    id: string;
     role: Role;
     content: string;
     createdAt: Timestamp;
@@ -36,26 +36,26 @@ export default function ChatLayout() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
-  const [conversationCol, setConversationCol] = useState<any>(null);
-  const [conversationQuery, setConversationQuery] = useState<any>(null);
-
-  useEffect(() => {
-    if (firestore) {
-      const col = collection(firestore, 'conversations');
-      setConversationCol(col);
-      setConversationQuery(query(col, orderBy('createdAt', 'asc')));
-    }
+  const conversationCol = useMemo(() => {
+      if (!firestore) return null;
+      return collection(firestore, 'conversations') as CollectionReference<StoredMessage>;
   }, [firestore]);
+
+  const conversationQuery = useMemo(() => {
+    if (!conversationCol) return null;
+    return query(conversationCol, orderBy('createdAt', 'asc'));
+  }, [conversationCol]);
 
   const { data: storedMessages, loading: messagesLoading } = useCollection<StoredMessage>(conversationQuery);
 
   useEffect(() => {
-    if (storedMessages && storedMessages.length > 0) {
-      const loadedMessages = storedMessages.map(msg => ({
-          ...msg,
-          createdAt: msg.createdAt?.toDate() ?? new Date(),
-      }));
-      setMessages([initialMessage, ...loadedMessages]);
+    if (storedMessages) {
+        const loadedMessages = storedMessages.map(msg => ({
+            ...msg,
+            id: msg.id,
+            createdAt: msg.createdAt?.toDate() ?? new Date(),
+        }));
+        setMessages([initialMessage, ...loadedMessages]);
     }
   }, [storedMessages]);
   
@@ -69,7 +69,7 @@ export default function ChatLayout() {
         await addDoc(conversationCol, {
             ...message,
             createdAt: serverTimestamp(),
-        });
+        } as any);
     } catch (error) {
         console.error("Error saving message: ", error);
     }
@@ -79,23 +79,25 @@ export default function ChatLayout() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage: Message = {
-      id: new Date().toISOString(),
+    const userMessage: Omit<Message, 'id'> = {
       role: Role.user,
       content: input,
       createdAt: new Date(),
     };
-
-    setMessages((prev) => [...prev, userMessage]);
+    
+    // Optimistically update the UI
+    setMessages((prev) => [...prev, { ...userMessage, id: new Date().toISOString() }]);
     saveMessage({role: userMessage.role, content: userMessage.content});
     setInput('');
     setIsLoading(true);
 
     try {
-      const currentMessages: Message[] = [...messages, userMessage].map(({id, createdAt, ...rest}) => rest);
+      // We pass the messages without id/createdAt to the AI
+      const currentMessages: Omit<Message, 'id'|'createdAt'>[] = [...messages, userMessage].map(({id, createdAt, ...rest}) => rest);
       const aiMessage = await getAiResponse(currentMessages);
       const fullAiMessage = { ...aiMessage, id: new Date().toISOString() + '-ai', createdAt: new Date() };
-      setMessages((prev) => [...prev, fullAiMessage]);
+
+      // We only save the AI message, user message is already saved.
       saveMessage({role: fullAiMessage.role, content: fullAiMessage.content});
 
     } catch (error) {
@@ -127,9 +129,9 @@ export default function ChatLayout() {
       <CardContent className="flex flex-col flex-grow p-4 md:p-6 space-y-4">
         <ScrollArea className="flex-grow pr-4" ref={scrollAreaRef}>
           <div className="space-y-6">
-            {messages.map((msg) => (
+            {messages.map((msg, index) => (
               <ChatMessage
-                key={msg.id}
+                key={`${msg.id}-${index}`}
                 message={msg}
                 kingAvatar={kingAvatar}
                 userAvatar={userAvatar}

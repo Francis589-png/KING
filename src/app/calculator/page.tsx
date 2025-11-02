@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -16,7 +16,7 @@ import { translateToBinary } from '@/app/actions';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, Timestamp, CollectionReference } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
@@ -41,16 +41,16 @@ export default function CalculatorPage() {
   const [translationError, setTranslationError] = useState<string | null>(null);
 
   const firestore = useFirestore();
-  const [calculationsCol, setCalculationsCol] = useState<any>(null);
-  const [calculationsQuery, setCalculationsQuery] = useState<any>(null);
   
-  useEffect(() => {
-    if (firestore) {
-      const col = collection(firestore, 'calculations');
-      setCalculationsCol(col);
-      setCalculationsQuery(query(col, orderBy('createdAt', 'desc')));
-    }
-  },[firestore]);
+  const calculationsCol = useMemo(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'calculations') as CollectionReference<Calculation>;
+  }, [firestore]);
+
+  const calculationsQuery = useMemo(() => {
+    if (!calculationsCol) return null;
+    return query(calculationsCol, orderBy('createdAt', 'desc'));
+  }, [calculationsCol]);
   
   const { data: calculations, loading: calculationsLoading } = useCollection<Calculation>(calculationsQuery);
 
@@ -62,7 +62,7 @@ export default function CalculatorPage() {
         input,
         output,
         createdAt: serverTimestamp(),
-      });
+      } as any);
     } catch (error) {
       console.error("Error adding document: ", error);
     }
