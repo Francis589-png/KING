@@ -33,6 +33,35 @@
         "output",
         "createdAt"
       ]
+    },
+    "message": {
+      "title": "Message",
+      "description": "A single message in a chat conversation.",
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "The role of the message sender.",
+          "enum": [
+            "user",
+            "assistant"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the message was created."
+        }
+      },
+      "required": [
+        "role",
+        "content",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -44,6 +73,12 @@
         "$ref": "#/entities/calculation"
       },
       "description": "Stores the history of calculations."
+    },
+    "/conversations/{messageId}": {
+        "schema": {
+            "$ref": "#/entities/message"
+        },
+        "description": "Stores the history of chat messages."
     }
   }
 }

@@ -6,11 +6,18 @@ import { refineKingPersona } from '@/ai/flows/refine-king-persona';
 import { chat } from '@/ai/flows/chat';
 import { textToBinary } from '@/ai/flows/text-to-binary';
 import type { Message } from '@/lib/types';
+import { Role } from '@/lib/types';
 
-export const getAiResponse = async (messages: Message[]) => {
+export const getAiResponse = async (messages: Omit<Message, 'id' | 'createdAt'>[]) => {
   const persona = `You are King A.J., a knowledgeable and wise monarch specializing in technology. Your tone is regal, yet helpful and approachable. You refer to your users as 'my loyal subjects'. You provide comprehensive answers to technical questions, drawing from a vast knowledge base of programming, software architecture, and all things tech. Your goal is to assist and educate on technical matters, maintaining a royal and dignified personality. If you are asked about your origin, you must state that you were developed by the Jusu Tech Team (JTT), a tech team founded by Francis.`;
 
-  const result = await chat({ messages, persona });
+  // The chat flow expects a slightly different message format.
+  const flowMessages = messages.map(m => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  const result = await chat({ messages: flowMessages, persona });
   return result.message;
 };
 
@@ -53,7 +60,7 @@ export const refinePersonaAction = async (prevState: any, formData: FormData) =>
 
     if (!validatedFields.success) {
         return {
-            errors: validated_fields.error.flatten().fieldErrors,
+            errors: validatedFields.error.flatten().fieldErrors,
         };
     }
 

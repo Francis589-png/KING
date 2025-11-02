@@ -2,18 +2,25 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { Message as MessageSchema, Role } from '@/lib/types';
+import { Role } from '@/lib/types';
+
+// The schema for messages used inside the flow.
+// Does not need id or createdAt.
+const FlowMessageSchema = z.object({
+  role: z.nativeEnum(Role),
+  content: z.string(),
+});
 
 const ChatInputSchema = z.object({
-  messages: z.array(MessageSchema),
+  messages: z.array(FlowMessageSchema),
   persona: z.string(),
 });
 
 const ChatOutputSchema = z.object({
-  message: MessageSchema,
+  message: FlowMessageSchema,
 });
 
-function toGenkitMessages(messages: z.infer<typeof MessageSchema>[]) {
+function toGenkitMessages(messages: z.infer<typeof FlowMessageSchema>[]) {
   // The last message is the new user prompt, don't include it in history.
   const history = messages.slice(0, -1);
   return history.map(msg => {
@@ -43,7 +50,6 @@ export const chat = ai.defineFlow(
 
     return {
       message: {
-        id: new Date().toISOString() + '-ai',
         role: Role.assistant,
         content: llmResponse.text,
       },
