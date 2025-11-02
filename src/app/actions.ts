@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { initialKingKnowledge } from '@/ai/flows/initial-king-knowledge';
 import { refineKingPersona } from '@/ai/flows/refine-king-persona';
 import { chat } from '@/ai/flows/chat';
+import { textToBinary } from '@/ai/flows/text-to-binary';
 import type { Message } from '@/lib/types';
 
 export const getAiResponse = async (messages: Message[]) => {
@@ -64,3 +65,25 @@ export const refinePersonaAction = async (prevState: any, formData: FormData) =>
         return { success: false, message: 'Failed to refine persona.' };
     }
 }
+
+const textToBinarySchema = z.object({
+  text: z.string().min(1, { message: 'Please enter some text to translate.' }),
+});
+
+export const translateToBinary = async (text: string) => {
+  const validatedFields = textToBinarySchema.safeParse({ text });
+
+  if (!validatedFields.success) {
+    return {
+      error: validatedFields.error.flatten().fieldErrors.text?.join(' '),
+    };
+  }
+
+  try {
+    const result = await textToBinary({ text: validatedFields.data.text });
+    return { binary: result.binary };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Failed to translate to binary.' };
+  }
+};
