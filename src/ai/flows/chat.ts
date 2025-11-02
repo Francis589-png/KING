@@ -3,7 +3,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { Message as MessageSchema, Role } from '@/lib/types';
-import { AIMessage, HumanMessage } from 'genkit';
 
 const ChatInputSchema = z.object({
   messages: z.array(MessageSchema),
@@ -15,11 +14,13 @@ const ChatOutputSchema = z.object({
 });
 
 function toGenkitMessages(messages: z.infer<typeof MessageSchema>[]) {
-  return messages.map(msg => {
+  // The last message is the new user prompt, don't include it in history.
+  const history = messages.slice(0, -1);
+  return history.map(msg => {
     if (msg.role === Role.user) {
-      return { role: 'user', content: [{ text: msg.content }] };
+      return { role: 'user' as const, content: [{ text: msg.content }] };
     }
-    return { role: 'model', content: [{ text: msg.content }] };
+    return { role: 'model' as const, content: [{ text: msg.content }] };
   });
 }
 
@@ -31,9 +32,11 @@ export const chat = ai.defineFlow(
   },
   async ({ messages, persona }) => {
     const history = toGenkitMessages(messages);
+    const lastMessage = messages[messages.length - 1];
 
     const llmResponse = await ai.generate({
-      prompt: `${persona}\n\nContinue the conversation. Respond as the persona described.`,
+      system: persona,
+      prompt: lastMessage.content,
       history,
       model: 'googleai/gemini-2.5-flash',
     });
