@@ -61,7 +61,7 @@ export default function AdminPage() {
     <div className="container mx-auto py-10">
       <h1 className="font-headline text-3xl font-bold mb-6">Admin Dashboard</h1>
       <Tabs defaultValue="knowledge">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
           <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
           <TabsTrigger value="users">User Profiles</TabsTrigger>
           <TabsTrigger value="persona">AI Persona</TabsTrigger>
