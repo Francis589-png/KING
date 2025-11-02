@@ -11,8 +11,23 @@ import { SidebarNav } from './sidebar-nav';
 import Link from 'next/link';
 import { Icons } from './icons';
 import { Header } from './header';
+import SplashScreen from './splash-screen';
+import { useState, useEffect } from 'react';
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen />;
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
