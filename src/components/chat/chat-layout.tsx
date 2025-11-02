@@ -55,7 +55,9 @@ export default function ChatLayout() {
             id: msg.id,
             createdAt: msg.createdAt?.toDate() ?? new Date(),
         }));
-        setMessages([initialMessage, ...loadedMessages]);
+        if(loadedMessages.length > 0) {
+            setMessages([initialMessage, ...loadedMessages]);
+        }
     }
   }, [storedMessages]);
   
@@ -79,26 +81,25 @@ export default function ChatLayout() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage: Omit<Message, 'id'> = {
+    const userMessage: Omit<Message, 'id'|'createdAt'> = {
       role: Role.user,
       content: input,
-      createdAt: new Date(),
     };
     
     // Optimistically update the UI
-    setMessages((prev) => [...prev, { ...userMessage, id: new Date().toISOString() }]);
-    saveMessage({role: userMessage.role, content: userMessage.content});
+    const tempId = new Date().toISOString();
+    setMessages((prev) => [...prev, { ...userMessage, id: tempId, createdAt: new Date() }]);
+    saveMessage(userMessage);
     setInput('');
     setIsLoading(true);
 
     try {
       // We pass the messages without id/createdAt to the AI
-      const currentMessages: Omit<Message, 'id'|'createdAt'>[] = [...messages, userMessage].map(({id, createdAt, ...rest}) => rest);
-      const aiMessage = await getAiResponse(currentMessages);
-      const fullAiMessage = { ...aiMessage, id: new Date().toISOString() + '-ai', createdAt: new Date() };
-
-      // We only save the AI message, user message is already saved.
-      saveMessage({role: fullAiMessage.role, content: fullAiMessage.content});
+      const currentMessagesForAi: Omit<Message, 'id'|'createdAt'>[] = [...messages, {...userMessage, id: tempId, createdAt: new Date()}].map(({id, createdAt, ...rest}) => rest);
+      const aiMessageContent = await getAiResponse(currentMessagesForAi);
+      
+      // Save the AI message to Firestore, which will trigger the onSnapshot listener to update the UI
+      saveMessage(aiMessageContent);
 
     } catch (error) {
       console.error('Failed to get AI response:', error);
