@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { uploadKnowledge, refinePersonaAction } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 
@@ -18,8 +17,8 @@ const initialPersona = `You are King A.J., a knowledgeable and wise monarch. You
 
 export default function AdminPage() {
     const { toast } = useToast();
-    const [knowledgeState, knowledgeAction] = useFormState(uploadKnowledge, null);
-    const [personaState, personaAction] = useFormState(refinePersonaAction, null);
+    const [knowledgeState, knowledgeAction] = useActionState(uploadKnowledge, null);
+    const [personaState, personaAction] = useActionState(refinePersonaAction, null);
 
     const knowledgeFormRef = useRef<HTMLFormElement>(null);
     const personaFormRef = useRef<HTMLFormElement>(null);
