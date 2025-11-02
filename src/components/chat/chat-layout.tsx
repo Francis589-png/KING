@@ -16,7 +16,7 @@ const kingAvatar = PlaceHolderImages.find((img) => img.id === 'king-avatar')?.im
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar')?.imageUrl ?? '';
 
 const initialMessage: Message = {
-    id: '0',
+    id: 'initial-message',
     role: Role.assistant,
     content: "Greetings, my loyal subject. I am King A.J. How may I be of service to you today? Ask me anything you wish to know.",
     createdAt: new Date(),
@@ -94,7 +94,7 @@ export default function ChatLayout() {
     try {
       const currentMessages: Message[] = [...messages, userMessage].map(({id, createdAt, ...rest}) => rest);
       const aiMessage = await getAiResponse(currentMessages);
-      const fullAiMessage = { ...aiMessage, createdAt: new Date() };
+      const fullAiMessage = { ...aiMessage, id: new Date().toISOString() + '-ai', createdAt: new Date() };
       setMessages((prev) => [...prev, fullAiMessage]);
       saveMessage({role: fullAiMessage.role, content: fullAiMessage.content});
 
