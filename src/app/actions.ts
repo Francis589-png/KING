@@ -5,6 +5,7 @@ import { initialKingKnowledge } from '@/ai/flows/initial-king-knowledge';
 import { refineKingPersona } from '@/ai/flows/refine-king-persona';
 import { chat } from '@/ai/flows/chat';
 import { textToBinary } from '@/ai/flows/text-to-binary';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
 
@@ -92,5 +93,27 @@ export const translateToBinary = async (text: string) => {
   } catch (error) {
     console.error(error);
     return { error: 'Failed to translate to binary.' };
+  }
+};
+
+const ttsSchema = z.object({
+  text: z.string().min(1),
+});
+
+export const getAudioForText = async (text: string) => {
+  const validatedFields = ttsSchema.safeParse({ text });
+
+  if (!validatedFields.success) {
+    return {
+      error: 'Text for speech cannot be empty.',
+    };
+  }
+
+  try {
+    const result = await textToSpeech({ text: validatedFields.data.text });
+    return { audio: result.audio };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Failed to generate audio.' };
   }
 };
