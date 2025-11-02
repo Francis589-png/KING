@@ -33,7 +33,7 @@ export default function ChatLayout() {
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
 
   const conversationCol = useMemo(() => {
@@ -116,9 +116,9 @@ export default function ChatLayout() {
   };
   
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
+    if (viewportRef.current) {
+      viewportRef.current.scrollTo({
+        top: viewportRef.current.scrollHeight,
         behavior: 'smooth',
       });
     }
@@ -128,11 +128,11 @@ export default function ChatLayout() {
   return (
     <Card className="w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl">
       <CardContent className="flex flex-col flex-grow p-4 md:p-6 space-y-4">
-        <ScrollArea className="flex-grow pr-4" ref={scrollAreaRef}>
+        <ScrollArea className="flex-grow pr-4" viewportRef={viewportRef}>
           <div className="space-y-6">
             {messages.map((msg, index) => (
               <ChatMessage
-                key={`${msg.id}-${index}`}
+                key={msg.id}
                 message={msg}
                 kingAvatar={kingAvatar}
                 userAvatar={userAvatar}
