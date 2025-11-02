@@ -17,9 +17,9 @@ const ChatOutputSchema = z.object({
 function toGenkitMessages(messages: z.infer<typeof MessageSchema>[]) {
   return messages.map(msg => {
     if (msg.role === Role.user) {
-      return new HumanMessage(msg.content);
+      return { role: 'user', content: [{ text: msg.content }] };
     }
-    return new AIMessage(msg.content);
+    return { role: 'model', content: [{ text: msg.content }] };
   });
 }
 
