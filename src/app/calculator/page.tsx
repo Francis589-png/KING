@@ -41,12 +41,21 @@ export default function CalculatorPage() {
   const [translationError, setTranslationError] = useState<string | null>(null);
 
   const firestore = useFirestore();
-  const calculationsCol = collection(firestore, 'calculations');
-  const calculationsQuery = query(calculationsCol, orderBy('createdAt', 'desc'));
+  const [calculationsCol, setCalculationsCol] = useState<any>(null);
+  const [calculationsQuery, setCalculationsQuery] = useState<any>(null);
+  
+  useEffect(() => {
+    if (firestore) {
+      const col = collection(firestore, 'calculations');
+      setCalculationsCol(col);
+      setCalculationsQuery(query(col, orderBy('createdAt', 'desc')));
+    }
+  },[firestore]);
+  
   const { data: calculations, loading: calculationsLoading } = useCollection<Calculation>(calculationsQuery);
 
   const addCalculationToHistory = async (type: 'base' | 'text', input: string, output: string) => {
-    if (!firestore) return;
+    if (!calculationsCol) return;
     try {
       await addDoc(calculationsCol, {
         type,
@@ -244,7 +253,11 @@ export default function CalculatorPage() {
                             {calculationsLoading && (
                                 <TableRow>
                                     <TableCell colSpan={3}>
-                                        <Skeleton className="h-8 w-full" />
+                                        <div className='space-y-2'>
+                                            <Skeleton className="h-8 w-full" />
+                                            <Skeleton className="h-8 w-full" />
+                                            <Skeleton className="h-8 w-full" />
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             )}

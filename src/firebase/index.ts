@@ -11,6 +11,9 @@ import {
   FirebaseProvider,
 } from './provider';
 import { FirebaseClientProvider } from './client-provider';
+import { useCollection } from './firestore/use-collection';
+import { useDoc } from './firestore/use-doc';
+import { useUser } from './auth/use-user';
 
 
 function initializeFirebase() {
@@ -20,12 +23,6 @@ function initializeFirebase() {
   const firestore = getFirestore(app);
   return { app, auth, firestore };
 }
-
-// Dummy exports for hooks that might be created later
-const useCollection = (query: any) => ({ data: [], loading: true, error: null });
-const useDoc = (query: any) => ({ data: null, loading: true, error: null });
-const useUser = () => ({ user: null, loading: true });
-
 
 export {
   initializeFirebase,
