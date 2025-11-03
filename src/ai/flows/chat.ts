@@ -12,9 +12,16 @@ const FlowMessageSchema = z.object({
   content: z.string(),
 });
 
+const DetectedObjectSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  confidence: z.number(),
+});
+
 const ChatInputSchema = z.object({
   messages: z.array(FlowMessageSchema),
   persona: z.string(),
+  detections: z.array(DetectedObjectSchema).optional(),
 });
 
 const ChatOutputSchema = z.object({
@@ -38,12 +45,18 @@ export const chat = ai.defineFlow(
     inputSchema: ChatInputSchema,
     outputSchema: ChatOutputSchema,
   },
-  async ({ messages, persona }) => {
+  async ({ messages, persona, detections }) => {
     const history = toGenkitMessages(messages);
     const lastMessage = messages[messages.length - 1];
 
+    let systemPrompt = persona;
+    if (detections && detections.length > 0) {
+      const detectionText = detections.map(d => `${d.name} (${d.description})`).join(', ');
+      systemPrompt += `\n\nCONTEXT: The user has recently used an object detector and found the following items: ${detectionText}. If the user asks about these items, use this context to answer their questions.`;
+    }
+
     const llmResponse = await ai.generate({
-      system: persona,
+      system: systemPrompt,
       prompt: lastMessage.content,
       history,
       model: googleAI.model('gemini-2.5-flash'),

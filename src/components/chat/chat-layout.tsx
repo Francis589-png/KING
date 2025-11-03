@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useContext } from 'react';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
 import ChatMessage from './chat-message';
@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, Timestamp, CollectionReference } from 'firebase/firestore';
+import { DetectionContext } from '@/context/detection-context';
 
 const kingAvatar = PlaceHolderImages.find((img) => img.id === 'king-avatar')?.imageUrl ?? '';
 const userAvatar = PlaceHolderImages.find((img) => img.id === 'user-avatar')?.imageUrl ?? '';
@@ -35,6 +36,7 @@ export default function ChatLayout() {
   const [isLoading, setIsLoading] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
+  const { detections } = useContext(DetectionContext);
 
   const conversationCol = useMemo(() => {
       if (!firestore) return null;
@@ -96,7 +98,7 @@ export default function ChatLayout() {
     try {
       // We pass the messages without id/createdAt to the AI
       const currentMessagesForAi: Omit<Message, 'id'|'createdAt'>[] = [...messages, {...userMessage, id: tempId, createdAt: new Date()}].map(({id, createdAt, ...rest}) => rest);
-      const aiMessageContent = await getAiResponse(currentMessagesForAi);
+      const aiMessageContent = await getAiResponse(currentMessagesForAi, detections);
       
       // Save the AI message to Firestore, which will trigger the onSnapshot listener to update the UI
       saveMessage(aiMessageContent);
@@ -126,22 +128,34 @@ export default function ChatLayout() {
 
 
   return (
-    <Card className="w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl">
-      <CardContent className="flex flex-col flex-grow p-4 md:p-6 overflow-hidden">
-        <ScrollArea className="flex-grow pr-4 -mr-4" viewportRef={viewportRef}>
-          <div className="space-y-6 pb-4">
-            {messages.map((msg, index) => (
-              <ChatMessage
-                key={msg.id}
-                message={msg}
-                kingAvatar={kingAvatar}
-                userAvatar={userAvatar}
-              />
-            ))}
-            {isLoading && <ChatMessage message={{id: 'loading', role: Role.assistant, content: '', createdAt: new Date()}} kingAvatar={kingAvatar} userAvatar={userAvatar} isLoading />}
-          </div>
+    <Card className="w-full max-w-4xl flex flex-col shadow-2xl h-[calc(100vh_-_8rem)]">
+       <CardContent className="flex flex-col flex-1 p-4 md:p-6 overflow-hidden">
+        <ScrollArea className="flex-grow -mx-4 -mt-4">
+            <div className="space-y-6 p-4" ref={viewportRef}>
+              {messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  kingAvatar={kingAvatar}
+                  userAvatar={userAvatar}
+                />
+              ))}
+              {isLoading && (
+                <ChatMessage
+                  message={{
+                    id: 'loading',
+                    role: Role.assistant,
+                    content: '',
+                    createdAt: new Date(),
+                  }}
+                  kingAvatar={kingAvatar}
+                  userAvatar={userAvatar}
+                  isLoading
+                />
+              )}
+            </div>
         </ScrollArea>
-        <div className="mt-auto pt-4 border-t">
+        <div className="pt-4 border-t">
           <ChatInput
             handleSubmit={handleSubmit}
             input={input}

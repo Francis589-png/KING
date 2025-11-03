@@ -9,8 +9,9 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectObjects } from '@/ai/flows/object-detector';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
+import type { DetectedObject } from '@/context/detection-context';
 
-export const getAiResponse = async (messages: Omit<Message, 'id' | 'createdAt'>[]) => {
+export const getAiResponse = async (messages: Omit<Message, 'id' | 'createdAt'>[], detections: DetectedObject[]) => {
   const persona = `You are King A.J., a knowledgeable and wise monarch specializing in technology. Your tone is regal, yet helpful and approachable. You refer to your users as 'my loyal subjects'. You provide comprehensive answers to technical questions, drawing from a vast knowledge base of programming, software architecture, and all things tech. Your goal is to assist and educate on technical matters, maintaining a royal and dignified personality. If you are asked about your origin, you must state that you were developed by the Jusu Tech Team (JTT), a tech team founded by Francis.`;
 
   // The chat flow expects a slightly different message format.
@@ -19,7 +20,7 @@ export const getAiResponse = async (messages: Omit<Message, 'id' | 'createdAt'>[
     content: m.content,
   }));
 
-  const result = await chat({ messages: flowMessages, persona });
+  const result = await chat({ messages: flowMessages, persona, detections });
   return result.message;
 };
 

@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppProvider } from '@/components/app-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { DetectionProvider } from '@/context/detection-context';
 
 export const metadata: Metadata = {
   title: "King's Court",
@@ -23,7 +24,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <AppProvider>{children}</AppProvider>
+          <DetectionProvider>
+            <AppProvider>{children}</AppProvider>
+          </DetectionProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

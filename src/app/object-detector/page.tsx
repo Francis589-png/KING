@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -8,6 +8,7 @@ import { detectObjectsInImage } from '@/app/actions';
 import { LoaderCircle, Video, RefreshCw, Flashlight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { DetectionContext } from '@/context/detection-context';
 
 type DetectedObject = {
   name: string;
@@ -25,6 +26,7 @@ export default function ObjectDetectorPage() {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [isTorchOn, setIsTorchOn] = useState(false);
   const [isTorchAvailable, setIsTorchAvailable] = useState(false);
+  const { setDetections } = useContext(DetectionContext);
 
   useEffect(() => {
     // Stop any existing stream before starting a new one.
@@ -106,6 +108,7 @@ export default function ObjectDetectorPage() {
       });
     } else if (result.objects) {
       setDetectedObjects(result.objects);
+      setDetections(result.objects); // Save to context
     }
   };
 
