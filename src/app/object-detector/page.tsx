@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 
 type DetectedObject = {
   name: string;
+  description: string;
   confidence: number;
 };
 
@@ -148,12 +149,13 @@ export default function ObjectDetectorPage() {
               <ul className="space-y-2">
                 {detectedObjects.map((obj, index) => (
                   <li key={index} className="p-3 bg-card rounded-md shadow-sm">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-1">
                         <span className="font-medium capitalize">{obj.name}</span>
                         <span className="text-sm text-muted-foreground">
                             Confidence: {(obj.confidence * 100).toFixed(0)}%
                         </span>
                     </div>
+                    <p className='text-sm text-muted-foreground capitalize'>{obj.description}</p>
                     <Progress value={obj.confidence * 100} className="mt-2 h-2" />
                   </li>
                 ))}

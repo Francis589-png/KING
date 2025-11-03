@@ -22,6 +22,7 @@ export type DetectObjectsInput = z.infer<typeof DetectObjectsInputSchema>;
 const DetectObjectsOutputSchema = z.object({
     objects: z.array(z.object({
         name: z.string().describe('The name of the detected object.'),
+        description: z.string().describe('A detailed description of the object. For a person, specify if it is a man, woman, child, etc.'),
         confidence: z.number().describe('The confidence score of the detection, from 0 to 1.'),
     })).describe('A list of objects detected in the image.'),
 });
@@ -35,7 +36,7 @@ const prompt = ai.definePrompt({
   name: 'objectDetectorPrompt',
   input: { schema: DetectObjectsInputSchema },
   output: { schema: DetectObjectsOutputSchema },
-  prompt: `You are an expert object detection model. Analyze the provided image and identify the objects within it. For each object, provide its name and a confidence score.
+  prompt: `You are an expert object detection model. Analyze the provided image and identify the objects within it. For each object, provide its name, a detailed description, and a confidence score. If you see a person, the description should specify if it's a man, woman, child, etc.
 
 Image: {{media url=imageDataUri}}`,
 });
