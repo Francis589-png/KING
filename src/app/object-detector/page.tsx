@@ -3,10 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { detectObjectsInImage } from '@/app/actions';
-import { LoaderCircle, Video } from 'lucide-react';
+import { LoaderCircle, Video, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 type DetectedObject = {
@@ -21,11 +20,20 @@ export default function ObjectDetectorPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectedObjects, setDetectedObjects] = useState<DetectedObject[]>([]);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
   useEffect(() => {
+    // Stop any existing stream before starting a new one.
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+
     const getCameraPermission = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: facingMode } 
+        });
         setHasCameraPermission(true);
 
         if (videoRef.current) {
@@ -50,7 +58,7 @@ export default function ObjectDetectorPage() {
             stream.getTracks().forEach(track => track.stop());
         }
     }
-  }, [toast]);
+  }, [toast, facingMode]);
 
   const handleDetectObjects = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -85,6 +93,10 @@ export default function ObjectDetectorPage() {
     }
   };
 
+  const handleFlipCamera = () => {
+    setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
+  }
+
   return (
     <div className="container mx-auto py-10">
       <h1 className="font-headline text-3xl font-bold mb-6">Object Observatory</h1>
@@ -113,7 +125,7 @@ export default function ObjectDetectorPage() {
             )}
           </div>
           
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
             <Button onClick={handleDetectObjects} disabled={!hasCameraPermission || isDetecting} size="lg">
               {isDetecting ? (
                 <>
@@ -123,6 +135,10 @@ export default function ObjectDetectorPage() {
               ) : (
                 'Detect Objects'
               )}
+            </Button>
+            <Button onClick={handleFlipCamera} disabled={!hasCameraPermission || isDetecting} size="lg" variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Flip Camera
             </Button>
           </div>
 
