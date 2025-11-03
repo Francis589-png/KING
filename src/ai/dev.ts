@@ -7,3 +7,4 @@ import '@/ai/flows/refine-king-persona.ts';
 import '@/ai/flows/chat.ts';
 import '@/ai/flows/text-to-binary.ts';
 import '@/ai/flows/text-to-speech.ts';
+import '@/ai/flows/object-detector.ts';

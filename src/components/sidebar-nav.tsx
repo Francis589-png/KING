@@ -5,7 +5,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { MessageSquare, Shield, Calculator } from 'lucide-react';
+import { MessageSquare, Shield, Calculator, ScanLine } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -14,8 +14,9 @@ export function SidebarNav() {
 
   const navItems = [
     { href: '/', icon: <MessageSquare />, label: 'Chat' },
-    { href: '/admin', icon: <Shield />, label: 'Admin' },
     { href: '/calculator', icon: <Calculator />, label: 'Calculator' },
+    { href: '/object-detector', icon: <ScanLine />, label: 'Object Detector' },
+    { href: '/admin', icon: <Shield />, label: 'Admin' },
   ];
 
   return (

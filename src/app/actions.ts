@@ -6,6 +6,7 @@ import { refineKingPersona } from '@/ai/flows/refine-king-persona';
 import { chat } from '@/ai/flows/chat';
 import { textToBinary } from '@/ai/flows/text-to-binary';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { detectObjects } from '@/ai/flows/object-detector';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
 
@@ -116,4 +117,26 @@ export const getAudioForText = async (text: string) => {
     console.error(error);
     return { error: 'Failed to generate audio.' };
   }
+};
+
+const objectDetectorSchema = z.object({
+    imageDataUri: z.string(),
+});
+
+export const detectObjectsInImage = async (imageDataUri: string) => {
+    const validatedFields = objectDetectorSchema.safeParse({ imageDataUri });
+
+    if (!validatedFields.success) {
+        return {
+            error: 'Invalid image data.',
+        };
+    }
+
+    try {
+        const result = await detectObjects(validatedFields.data);
+        return { objects: result.objects };
+    } catch (error) {
+        console.error(error);
+        return { error: 'Failed to detect objects.' };
+    }
 };
