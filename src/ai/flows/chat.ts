@@ -3,6 +3,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { Role } from '@/lib/types';
+import { googleAI } from '@genkit-ai/google-genai';
 
 // The schema for messages used inside the flow.
 // Does not need id or createdAt.
@@ -45,7 +46,8 @@ export const chat = ai.defineFlow(
       system: persona,
       prompt: lastMessage.content,
       history,
-      model: 'googleai/gemini-2.5-flash',
+      model: googleAI.model('gemini-2.5-flash'),
+      plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
     });
 
     return {
