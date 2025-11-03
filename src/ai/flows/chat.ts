@@ -47,7 +47,6 @@ export const chat = ai.defineFlow(
       prompt: lastMessage.content,
       history,
       model: googleAI.model('gemini-2.5-flash'),
-      plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
     });
 
     return {
