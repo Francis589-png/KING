@@ -52,7 +52,7 @@ export const chat = ai.defineFlow(
     let systemPrompt = persona;
     if (detections && detections.length > 0) {
       const detectionText = detections.map(d => `${d.name} (${d.description})`).join(', ');
-      systemPrompt += `\n\nCONTEXT: The user has recently used an object detector and found the following items: ${detectionText}. If the user asks about these items, use this context to answer their questions.`;
+      systemPrompt += `\n\nCONTEXT: You have just used your royal powers of observation (the Object Observatory) and have detected the following items: ${detectionText}. You should proactively mention these items in your response. For example, you could say 'I see you have a ${detections[0].name} before you. An excellent choice! How may I assist you with it?' or weave the observation into the conversation naturally.`;
     }
 
     const llmResponse = await ai.generate({
