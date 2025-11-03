@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { detectObjectsInImage } from '@/app/actions';
-import { LoaderCircle, Video, RefreshCw } from 'lucide-react';
+import { LoaderCircle, Video, RefreshCw, Flashlight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 type DetectedObject = {
   name: string;
@@ -22,6 +23,8 @@ export default function ObjectDetectorPage() {
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectedObjects, setDetectedObjects] = useState<DetectedObject[]>([]);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [isTorchOn, setIsTorchOn] = useState(false);
+  const [isTorchAvailable, setIsTorchAvailable] = useState(false);
 
   useEffect(() => {
     // Stop any existing stream before starting a new one.
@@ -40,6 +43,16 @@ export default function ObjectDetectorPage() {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
+
+        const videoTrack = stream.getVideoTracks()[0];
+        const capabilities = videoTrack.getCapabilities();
+        // @ts-ignore because torch is not in the standard types yet
+        if (capabilities.torch) {
+          setIsTorchAvailable(true);
+        } else {
+            setIsTorchAvailable(false);
+        }
+
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
@@ -56,7 +69,9 @@ export default function ObjectDetectorPage() {
     return () => {
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
+            stream.getTracks().forEach(track => {
+                track.stop()
+            });
         }
     }
   }, [toast, facingMode]);
@@ -96,7 +111,31 @@ export default function ObjectDetectorPage() {
 
   const handleFlipCamera = () => {
     setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
+    setIsTorchOn(false); // Reset torch state on camera flip
   }
+  
+  const handleToggleTorch = async () => {
+    if (!videoRef.current?.srcObject || !isTorchAvailable) return;
+    
+    const stream = videoRef.current.srcObject as MediaStream;
+    const videoTrack = stream.getVideoTracks()[0];
+    
+    try {
+        await videoTrack.applyConstraints({
+            // @ts-ignore
+            advanced: [{ torch: !isTorchOn }]
+        });
+        setIsTorchOn(prev => !prev);
+    } catch (error) {
+        console.error('Error toggling torch:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Flashlight Error',
+            description: 'Could not control the flashlight.'
+        });
+    }
+  };
+
 
   return (
     <div className="container mx-auto py-10">
@@ -126,7 +165,7 @@ export default function ObjectDetectorPage() {
             )}
           </div>
           
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
             <Button onClick={handleDetectObjects} disabled={!hasCameraPermission || isDetecting} size="lg">
               {isDetecting ? (
                 <>
@@ -141,6 +180,12 @@ export default function ObjectDetectorPage() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Flip Camera
             </Button>
+             {isTorchAvailable && (
+              <Button onClick={handleToggleTorch} disabled={!hasCameraPermission || isDetecting} size="lg" variant="outline">
+                <Flashlight className={cn("mr-2 h-4 w-4", isTorchOn && "fill-yellow-300 text-yellow-500")} />
+                {isTorchOn ? 'Flash Off' : 'Flash On'}
+              </Button>
+            )}
           </div>
 
           {detectedObjects.length > 0 && (
