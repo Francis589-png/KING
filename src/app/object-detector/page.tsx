@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { detectObjectsInImage } from '@/app/actions';
+import { detectObjectsInImage, getAudioForText } from '@/app/actions';
 import { LoaderCircle, Video, RefreshCw, Flashlight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ export default function ObjectDetectorPage() {
   const [isTorchOn, setIsTorchOn] = useState(false);
   const [isTorchAvailable, setIsTorchAvailable] = useState(false);
   const { setDetections } = useContext(DetectionContext);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Stop any existing stream before starting a new one.
@@ -75,8 +77,36 @@ export default function ObjectDetectorPage() {
                 track.stop()
             });
         }
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
     }
-  }, [toast, facingMode]);
+  }, [toast, facingMode, audio]);
+
+  useEffect(() => {
+    if (detectedObjects.length > 0) {
+      const speakDetections = async () => {
+        const objectNames = detectedObjects.map(obj => obj.name);
+        let detectionText = "I have found: ";
+        if (objectNames.length > 1) {
+            detectionText += objectNames.slice(0, -1).join(', ') + ' and ' + objectNames.slice(-1);
+        } else {
+            detectionText += objectNames[0];
+        }
+        
+        const result = await getAudioForText(detectionText);
+        if (result.audio) {
+          const newAudio = new Audio(result.audio);
+          setAudio(newAudio);
+          newAudio.play();
+        } else {
+          console.error("Failed to get audio for detections.");
+        }
+      };
+      speakDetections();
+    }
+  }, [detectedObjects]);
 
   const handleDetectObjects = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -215,3 +245,5 @@ export default function ObjectDetectorPage() {
     </div>
   );
 }
+
+    
