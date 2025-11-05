@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { getSuraFromAPI, getRecitationFeedback } from '@/app/actions';
+import { getSuraFromAPI, getRecitationFeedback, getAudioForText } from '@/app/actions';
 import type { Sura } from '@/lib/types';
 import type { PronunciationCoachOutput } from '@/ai/flows/pronunciation-coach';
 import { Separator } from '@/components/ui/separator';
-import { BookOpen, Mic, Square, LoaderCircle } from 'lucide-react';
+import { BookOpen, Mic, Square, LoaderCircle, Volume2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { suraList } from '@/lib/suras';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -36,13 +36,17 @@ export default function QuranPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  const [isFetchingFeedbackAudio, setIsFetchingFeedbackAudio] = useState(false);
+  const [feedbackAudio, setFeedbackAudio] = useState<HTMLAudioElement | null>(null);
+
   useEffect(() => {
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
       }
+      feedbackAudio?.pause();
     };
-  }, []);
+  }, [feedbackAudio]);
 
   const handleFetchSura = async () => {
     if (!selectedSuraNumber) {
@@ -72,6 +76,11 @@ export default function QuranPage() {
 
   const startRecording = async (verse: Verse) => {
     setFeedback(null);
+    if (feedbackAudio) {
+      feedbackAudio.pause();
+      setFeedbackAudio(null);
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setAudioPermission(false);
       toast({ variant: 'destructive', title: 'Audio Error', description: 'Audio recording is not supported in your browser.' });
@@ -123,6 +132,29 @@ export default function QuranPage() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
       setIsRecording(null);
+    }
+  };
+
+  const playFeedbackAudio = async (text: string) => {
+    if (feedbackAudio) {
+        feedbackAudio.pause();
+        feedbackAudio.currentTime = 0;
+        setFeedbackAudio(null);
+        return;
+    }
+
+    setIsFetchingFeedbackAudio(true);
+    const result = await getAudioForText(text);
+    setIsFetchingFeedbackAudio(false);
+    if (result.audio) {
+        const newAudio = new Audio(result.audio);
+        setFeedbackAudio(newAudio);
+        newAudio.play();
+        newAudio.onended = () => {
+            setFeedbackAudio(null);
+        };
+    } else {
+        toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the feedback.' });
     }
   };
 
@@ -226,8 +258,21 @@ export default function QuranPage() {
                     {feedback && feedback.verseNumber === verse.numberInSurah && (
                         <div className='space-y-4 pt-2'>
                             <Alert variant={feedback.isCorrect ? 'default' : 'destructive'}>
-                                <AlertTitle>{feedback.isCorrect ? "Excellent Recitation!" : "Needs Improvement"}</AlertTitle>
-                                <AlertDescription className='whitespace-pre-wrap'>{feedback.feedback}</AlertDescription>
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <AlertTitle>{feedback.isCorrect ? "Excellent Recitation!" : "Needs Improvement"}</AlertTitle>
+                                        <AlertDescription className='whitespace-pre-wrap'>{feedback.feedback}</AlertDescription>
+                                    </div>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => playFeedbackAudio(feedback.feedback)}
+                                        disabled={isFetchingFeedbackAudio}
+                                        aria-label="Play feedback"
+                                    >
+                                        {isFetchingFeedbackAudio ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
+                                    </Button>
+                                </div>
                             </Alert>
                             {!feedback.isCorrect && feedback.correctiveAudioUri && (
                                 <div>
