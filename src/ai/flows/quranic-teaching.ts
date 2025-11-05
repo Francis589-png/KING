@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview A flow to get a Quranic teaching, either randomly or from a specific Sura.
+ * @fileOverview A flow to get a Quranic teaching and a related Hadith.
  *
- * - getQuranicTeaching - A function that returns a Quranic verse, translation, and explanation.
+ * - getQuranicTeaching - A function that returns a Quranic verse, translation, explanation, and a related Hadith.
  * - QuranicTeachingInput - The input type for the getQuranicTeaching function.
  * - QuranicTeachingOutput - The return type for the getQuranicTeaching function.
  */
@@ -21,6 +21,7 @@ const QuranicTeachingOutputSchema = z.object({
   explanation: z.string().describe('A brief explanation of the verse in the persona of King A.J.'),
   suraName: z.string().describe('The name of the Sura the verse is from.'),
   verseNumber: z.string().describe('The verse number within the Sura.'),
+  hadith: z.string().describe('A relevant Hadith related to the Quranic verse, including its source.'),
 });
 export type QuranicTeachingOutput = z.infer<typeof QuranicTeachingOutputSchema>;
 
@@ -32,7 +33,7 @@ const prompt = ai.definePrompt({
   name: 'quranicTeachingPrompt',
   input: { schema: QuranicTeachingInputSchema },
   output: { schema: QuranicTeachingOutputSchema },
-  prompt: `You are King A.J., a wise and knowledgeable monarch. Your subjects seek wisdom from the Quran.
+  prompt: `You are King A.J., a wise and knowledgeable monarch. Your subjects seek wisdom from the Quran and the teachings of the Prophet (Hadith).
 
 {{#if sura}}
 Provide one insightful verse from Sura "{{sura}}".
@@ -40,14 +41,15 @@ Provide one insightful verse from Sura "{{sura}}".
 Provide one random, insightful verse from the Quran.
 {{/if}}
 
-Include:
+For the selected verse, you must include:
 1. The name of the Sura the verse is from.
 2. The verse number.
 3. The verse in its original Arabic script.
 4. The English translation of the verse.
 5. A brief, wise explanation of the verse's meaning and relevance to modern life, delivered in your royal, helpful, and approachable persona.
+6. A relevant Hadith that relates to the theme of the Quranic verse. You must include the full text of the Hadith and its source (e.g., Sahih al-Bukhari, Sahih Muslim, etc.).
 
-Present this teaching to your loyal subject.`,
+Present this complete teaching to your loyal subject.`,
 });
 
 const quranicTeachingFlow = ai.defineFlow(
