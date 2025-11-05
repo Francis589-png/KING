@@ -143,9 +143,18 @@ export const detectObjectsInImage = async (imageDataUri: string) => {
     }
 };
 
-export const getQuranicTeaching = async () => {
+const quranTeachingSchema = z.object({
+    sura: z.string().optional(),
+});
+
+export const getQuranicTeaching = async (sura?: string) => {
+    const validatedFields = quranTeachingSchema.safeParse({ sura });
+    if (!validatedFields.success) {
+        return { error: 'Invalid Sura selection.' };
+    }
+
     try {
-        const result = await getQuranicTeachingFlow();
+        const result = await getQuranicTeachingFlow(validatedFields.data);
         return { teaching: result };
     } catch (error) {
         console.error(error);
