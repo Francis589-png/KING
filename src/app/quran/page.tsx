@@ -21,7 +21,7 @@ export default function QuranPage() {
   const handleFetchTeaching = async () => {
     setIsLoading(true);
     setTeaching(null);
-    const result = await getQuranicTeaching(selectedSura);
+    const result = await getQuranicTeaching(selectedSura === 'random' ? '' : selectedSura);
     setIsLoading(false);
 
     if (result.error) {
@@ -65,7 +65,7 @@ export default function QuranPage() {
             <SelectValue placeholder="Select a Sura (or get random)" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Random Verse & Hadith</SelectItem>
+            <SelectItem value="random">Random Verse & Hadith</SelectItem>
             {suraList.map((sura, index) => (
               <SelectItem key={index} value={sura}>
                 {index + 1}. {sura}
