@@ -10,6 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { textToSpeech } from './text-to-speech';
+import type { z as zod } from 'zod';
 
 const PronunciationCoachInputSchema = z.object({
   userAudioDataUri: z
@@ -40,7 +41,7 @@ export async function pronunciationCoach(input: PronunciationCoachInput): Promis
 const prompt = ai.definePrompt({
   name: 'pronunciationCoachPrompt',
   input: { schema: PronunciationCoachInputSchema },
-  output: { schema: Omit<PronunciationCoachOutput, 'correctiveAudioUri'> },
+  output: { schema: PronunciationCoachOutputSchema.omit({ correctiveAudioUri: true }) },
   prompt: `You are a world-class Quranic recitation (Tajweed) expert. Your task is to analyze a user's recitation of a Quranic verse and provide precise, helpful feedback.
 
 Original Verse (Arabic):
