@@ -1,26 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { getQuranicTeaching } from '@/app/actions';
+import { getQuranicTeaching, getRecitationFeedback } from '@/app/actions';
 import type { QuranicTeachingOutput } from '@/ai/flows/quranic-teaching';
+import type { PronunciationCoachOutput } from '@/ai/flows/pronunciation-coach';
 import { Separator } from '@/components/ui/separator';
-import { BookOpen, Share2, Twitter, MessageCircle } from 'lucide-react';
+import { BookOpen, Share2, Twitter, MessageCircle, Mic, Square, LoaderCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { suraList } from '@/lib/suras';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 export default function QuranPage() {
   const [teaching, setTeaching] = useState<QuranicTeachingOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedSura, setSelectedSura] = useState<string>('');
+  const [selectedSura, setSelectedSura] = useState<string>('random');
   const { toast } = useToast();
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [feedback, setFeedback] = useState<PronunciationCoachOutput | null>(null);
+  const [audioPermission, setAudioPermission] = useState<boolean | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  useEffect(() => {
+    // Clean up on unmount
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
 
   const handleFetchTeaching = async () => {
     setIsLoading(true);
     setTeaching(null);
+    setFeedback(null);
     const result = await getQuranicTeaching(selectedSura === 'random' ? '' : selectedSura);
     setIsLoading(false);
 
@@ -49,13 +69,78 @@ export default function QuranPage() {
     window.open(url, '_blank');
   };
 
+  const startRecording = async () => {
+    setFeedback(null);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setAudioPermission(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioPermission(true);
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result as string;
+          if (teaching?.verse) {
+            setIsAnalyzing(true);
+            const result = await getRecitationFeedback(base64Audio, teaching.verse);
+            setIsAnalyzing(false);
+            if (result.feedback) {
+              setFeedback(result.feedback);
+            } else {
+              toast({
+                variant: 'destructive',
+                title: 'Analysis Failed',
+                description: result.error,
+              });
+            }
+          }
+        };
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
+      setAudioPermission(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handlePracticeClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+
   return (
     <div className="container mx-auto py-10">
       <div className="flex flex-col items-center text-center mb-8">
         <BookOpen className="h-16 w-16 mb-4 text-primary" />
         <h1 className="font-headline text-4xl font-bold">Quranic & Prophetic Teachings</h1>
         <p className="text-muted-foreground max-w-2xl mt-2">
-          Select a Sura or receive a random verse from the Holy Quran, along with related Hadith and a brief explanation from King A.J.
+          Select a Sura or receive a random verse, related Hadith, and practice your recitation with AI feedback.
         </p>
       </div>
 
@@ -121,6 +206,45 @@ export default function QuranPage() {
               <h3 className="font-semibold text-lg mb-2 text-primary">The King's Wisdom</h3>
               <p className="whitespace-pre-wrap">{teaching.explanation}</p>
             </div>
+
+            <Separator />
+
+            <div className='space-y-4 text-center'>
+                <h3 className="font-semibold text-lg text-primary">Recitation Coach</h3>
+                {audioPermission === false && (
+                    <Alert variant="destructive">
+                        <AlertTitle>Microphone Access Denied</AlertTitle>
+                        <AlertDescription>Please enable microphone permissions in your browser to use the Recitation Coach.</AlertDescription>
+                    </Alert>
+                )}
+                <Button onClick={handlePracticeClick} disabled={isAnalyzing} size="lg" className={cn(isRecording && 'bg-destructive hover:bg-destructive/90')}>
+                    {isRecording ? <Square className="mr-2 h-4 w-4 fill-white" /> : <Mic className="mr-2 h-4 w-4" />}
+                    {isRecording ? 'Stop Recording' : 'Practice Recitation'}
+                </Button>
+                {isAnalyzing && (
+                    <div className='flex items-center justify-center text-muted-foreground'>
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                        <p>The King is analyzing your recitation...</p>
+                    </div>
+                )}
+            </div>
+
+            {feedback && (
+                <div className='space-y-4'>
+                    <h3 className="font-semibold text-lg text-primary">Recitation Feedback</h3>
+                    <Alert variant={feedback.isCorrect ? 'default' : 'destructive'}>
+                        <AlertTitle>{feedback.isCorrect ? "Excellent Recitation!" : "Needs Improvement"}</AlertTitle>
+                        <AlertDescription className='whitespace-pre-wrap'>{feedback.feedback}</AlertDescription>
+                    </Alert>
+                    {!feedback.isCorrect && feedback.correctiveAudioUri && (
+                        <div>
+                            <p className='text-sm font-medium mb-2'>Listen to the correct pronunciation:</p>
+                            <audio controls src={feedback.correctiveAudioUri} className='w-full' />
+                        </div>
+                    )}
+                </div>
+            )}
+
           </CardContent>
           <CardFooter className="flex-col items-start gap-4">
             <Separator />

@@ -62,6 +62,40 @@
         "content",
         "createdAt"
       ]
+    },
+    "pronunciationAttempt": {
+      "title": "Pronunciation Attempt",
+      "description": "Represents a user's attempt to pronounce a Quranic verse.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user making the attempt."
+        },
+        "verse": {
+          "type": "string",
+          "description": "The text of the Quranic verse."
+        },
+        "isCorrect": {
+          "type": "boolean",
+          "description": "Whether the pronunciation was deemed correct."
+        },
+        "feedback": {
+          "type": "string",
+          "description": "The feedback provided by the AI."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the attempt."
+        }
+      },
+      "required": [
+        "userId",
+        "verse",
+        "isCorrect",
+        "createdAt"
+      ]
     }
   },
   "auth": {

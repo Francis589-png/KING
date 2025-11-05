@@ -8,6 +8,7 @@ import { textToBinary } from '@/ai/flows/text-to-binary';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectObjects } from '@/ai/flows/object-detector';
 import { getQuranicTeaching as getQuranicTeachingFlow } from '@/ai/flows/quranic-teaching';
+import { pronunciationCoach } from '@/ai/flows/pronunciation-coach';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
 import type { DetectedObject } from '@/context/detection-context';
@@ -161,3 +162,23 @@ export const getQuranicTeaching = async (sura?: string) => {
         return { error: 'Failed to retrieve a teaching at this time.' };
     }
 };
+
+const pronunciationCoachSchema = z.object({
+    userAudioDataUri: z.string(),
+    originalVerseText: z.string(),
+});
+
+export const getRecitationFeedback = async (userAudioDataUri: string, originalVerseText: string) => {
+    const validatedFields = pronunciationCoachSchema.safeParse({ userAudioDataUri, originalVerseText });
+    if (!validatedFields.success) {
+        return { error: 'Invalid input for pronunciation analysis.' };
+    }
+
+    try {
+        const result = await pronunciationCoach(validatedFields.data);
+        return { feedback: result };
+    } catch (error) {
+        console.error(error);
+        return { error: 'Failed to analyze recitation.' };
+    }
+}
