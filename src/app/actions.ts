@@ -7,6 +7,7 @@ import { chat } from '@/ai/flows/chat';
 import { textToBinary } from '@/ai/flows/text-to-binary';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectObjects } from '@/ai/flows/object-detector';
+import { getQuranicTeaching as getQuranicTeachingFlow } from '@/ai/flows/quranic-teaching';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
 import type { DetectedObject } from '@/context/detection-context';
@@ -139,5 +140,15 @@ export const detectObjectsInImage = async (imageDataUri: string) => {
     } catch (error) {
         console.error(error);
         return { error: 'Failed to detect objects.' };
+    }
+};
+
+export const getQuranicTeaching = async () => {
+    try {
+        const result = await getQuranicTeachingFlow();
+        return { teaching: result };
+    } catch (error) {
+        console.error(error);
+        return { error: 'Failed to retrieve a teaching at this time.' };
     }
 };
