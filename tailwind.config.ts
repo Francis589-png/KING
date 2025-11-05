@@ -13,6 +13,7 @@ export default {
         body: ['PT Sans', 'sans-serif'],
         headline: ['Playfair Display', 'serif'],
         code: ['monospace'],
+        quranic: ['Noto Naskh Arabic', 'serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
