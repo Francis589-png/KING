@@ -9,6 +9,7 @@ import { textToBinary } from '@/ai/flows/text-to-binary';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectObjects } from '@/ai/flows/object-detector';
 import { pronunciationCoach } from '@/ai/flows/pronunciation-coach';
+import { getMedicalTeaching } from '@/ai/flows/medical-teaching';
 import type { Message, Sura } from '@/lib/types';
 import { Role } from '@/lib/types';
 import type { DetectedObject } from '@/context/detection-context';
@@ -220,3 +221,22 @@ export const getRecitationFeedback = async (userAudioDataUri: string, originalVe
         return { error: 'Failed to analyze recitation.' };
     }
 }
+
+const medicalTeachingSchema = z.object({
+  topic: z.string().min(3, { message: 'Please enter a topic to learn about.' }),
+});
+
+export const getMedicalAdvice = async (topic: string) => {
+    const validatedFields = medicalTeachingSchema.safeParse({ topic });
+    if (!validatedFields.success) {
+        return { error: validatedFields.error.flatten().fieldErrors.topic?.join(' ') };
+    }
+
+    try {
+        const result = await getMedicalTeaching(validatedFields.data);
+        return { advice: result };
+    } catch (error) {
+        console.error(error);
+        return { error: 'The Royal Physician is currently unavailable. Please try again later.' };
+    }
+};

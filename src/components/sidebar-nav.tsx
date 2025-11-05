@@ -5,7 +5,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { MessageSquare, Shield, Calculator, ScanLine, BookOpen } from 'lucide-react';
+import { MessageSquare, Shield, Calculator, ScanLine, BookOpen, Stethoscope } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -17,6 +17,7 @@ export function SidebarNav() {
     { href: '/calculator', icon: <Calculator />, label: 'Calculator' },
     { href: '/object-detector', icon: <ScanLine />, label: 'Object Detector' },
     { href: '/quran', icon: <BookOpen />, label: 'Quranic Teachings' },
+    { href: '/medical', icon: <Stethoscope />, label: 'Medical Teachings' },
     { href: '/admin', icon: <Shield />, label: 'Admin' },
   ];
 
