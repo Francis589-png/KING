@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { getFullSura, getRecitationFeedback } from '@/app/actions';
-import type { GetFullSuraOutput } from '@/ai/flows/get-full-sura';
+import { getSuraFromAPI, getRecitationFeedback } from '@/app/actions';
+import type { Sura } from '@/lib/types';
 import type { PronunciationCoachOutput } from '@/ai/flows/pronunciation-coach';
 import { Separator } from '@/components/ui/separator';
 import { BookOpen, Mic, Square, LoaderCircle } from 'lucide-react';
@@ -17,16 +17,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-type Verse = GetFullSuraOutput['verses'][0];
+type Verse = Sura['verses'][0];
 
 interface VerseFeedback extends PronunciationCoachOutput {
   verseNumber: number;
 }
 
 export default function QuranPage() {
-  const [suraData, setSuraData] = useState<GetFullSuraOutput | null>(null);
+  const [suraData, setSuraData] = useState<Sura | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedSura, setSelectedSura] = useState<string | undefined>(undefined);
+  const [selectedSuraNumber, setSelectedSuraNumber] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   const [isRecording, setIsRecording] = useState<number | null>(null); // verse number
@@ -45,7 +45,7 @@ export default function QuranPage() {
   }, []);
 
   const handleFetchSura = async () => {
-    if (!selectedSura) {
+    if (!selectedSuraNumber) {
       toast({
         variant: 'destructive',
         title: 'No Sura Selected',
@@ -56,7 +56,7 @@ export default function QuranPage() {
     setIsLoading(true);
     setSuraData(null);
     setFeedback(null);
-    const result = await getFullSura(selectedSura);
+    const result = await getSuraFromAPI(Number(selectedSuraNumber));
     setIsLoading(false);
 
     if (result.error) {
@@ -94,11 +94,11 @@ export default function QuranPage() {
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
           const base64Audio = reader.result as string;
-          setIsAnalyzing(verse.verseNumber);
-          const result = await getRecitationFeedback(base64Audio, verse.arabicText);
+          setIsAnalyzing(verse.numberInSurah);
+          const result = await getRecitationFeedback(base64Audio, verse.text.arabic);
           setIsAnalyzing(null);
           if (result.feedback) {
-            setFeedback({ ...result.feedback, verseNumber: verse.verseNumber });
+            setFeedback({ ...result.feedback, verseNumber: verse.numberInSurah });
           } else {
             toast({
               variant: 'destructive',
@@ -111,7 +111,7 @@ export default function QuranPage() {
       };
 
       mediaRecorderRef.current.start();
-      setIsRecording(verse.verseNumber);
+      setIsRecording(verse.numberInSurah);
     } catch (err) {
       console.error('Error accessing microphone:', err);
       setAudioPermission(false);
@@ -137,19 +137,19 @@ export default function QuranPage() {
       </div>
 
       <div className="flex justify-center mb-8 gap-4 flex-wrap">
-        <Select onValueChange={setSelectedSura} value={selectedSura}>
+        <Select onValueChange={setSelectedSuraNumber} value={selectedSuraNumber}>
           <SelectTrigger className="w-[280px]">
             <SelectValue placeholder="Select a Sura" />
           </SelectTrigger>
           <SelectContent>
             {suraList.map((sura, index) => (
-              <SelectItem key={index} value={sura}>
+              <SelectItem key={index} value={(index + 1).toString()}>
                 {index + 1}. {sura}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Button onClick={handleFetchSura} disabled={isLoading || !selectedSura} size="lg">
+        <Button onClick={handleFetchSura} disabled={isLoading || !selectedSuraNumber} size="lg">
           {isLoading ? 'Loading Sura...' : 'Load Sura'}
         </Button>
       </div>
@@ -158,10 +158,8 @@ export default function QuranPage() {
         <Card className="max-w-4xl mx-auto">
           <CardHeader>
             <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/2 mt-2" />
           </CardHeader>
           <CardContent className="space-y-4">
-            <Skeleton className="h-20 w-full" />
             <Separator />
             <div className="space-y-2">
               <Skeleton className="h-12 w-full" />
@@ -176,25 +174,27 @@ export default function QuranPage() {
         <Card className="max-w-4xl mx-auto animate-in fade-in-50 duration-500">
           <CardHeader>
             <CardTitle className="text-3xl font-headline text-center">
-              {suraData.suraName}
+              {suraData.englishName} ({suraData.name})
             </CardTitle>
-            <CardDescription className="text-center pt-4 whitespace-pre-wrap">{suraData.introduction}</CardDescription>
+            <CardDescription className="text-center pt-4">
+                {suraData.englishNameTranslation} - {suraData.revelationType} - {suraData.numberOfAyahs} verses
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Separator />
             <Accordion type="single" collapsible className="w-full">
               {suraData.verses.map((verse) => (
-                <AccordionItem value={`verse-${verse.verseNumber}`} key={verse.verseNumber}>
+                <AccordionItem value={`verse-${verse.numberInSurah}`} key={verse.numberInSurah}>
                   <AccordionTrigger>
                     <div className="flex items-center gap-4 text-right w-full">
-                      <span className="text-sm font-bold text-primary mr-2">{verse.verseNumber}</span>
-                      <p className="font-quranic text-xl flex-1" dir="rtl">{verse.arabicText}</p>
+                      <span className="text-sm font-bold text-primary mr-2">{verse.numberInSurah}</span>
+                      <p className="font-quranic text-xl flex-1" dir="rtl">{verse.text.arabic}</p>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-4">
                     <div>
                       <h4 className="font-semibold text-primary">Translation</h4>
-                      <p className="text-muted-foreground italic">"{verse.englishTranslation}"</p>
+                      <p className="text-muted-foreground italic">"{verse.text.english}"</p>
                     </div>
                     
                     <Separator />
@@ -208,14 +208,14 @@ export default function QuranPage() {
                             </Alert>
                         )}
                         <Button 
-                            onClick={() => isRecording === verse.verseNumber ? stopRecording() : startRecording(verse)}
-                            disabled={isAnalyzing !== null && isAnalyzing !== verse.verseNumber}
-                            className={cn(isRecording === verse.verseNumber && 'bg-destructive hover:bg-destructive/90')}
+                            onClick={() => isRecording === verse.numberInSurah ? stopRecording() : startRecording(verse)}
+                            disabled={isAnalyzing !== null && isAnalyzing !== verse.numberInSurah}
+                            className={cn(isRecording === verse.numberInSurah && 'bg-destructive hover:bg-destructive/90')}
                         >
-                            {isRecording === verse.verseNumber ? <Square className="mr-2 h-4 w-4 fill-white" /> : <Mic className="mr-2 h-4 w-4" />}
-                            {isRecording === verse.verseNumber ? 'Stop Recording' : 'Practice Recitation'}
+                            {isRecording === verse.numberInSurah ? <Square className="mr-2 h-4 w-4 fill-white" /> : <Mic className="mr-2 h-4 w-4" />}
+                            {isRecording === verse.numberInSurah ? 'Stop Recording' : 'Practice Recitation'}
                         </Button>
-                         {isAnalyzing === verse.verseNumber && (
+                         {isAnalyzing === verse.numberInSurah && (
                             <div className='flex items-center text-muted-foreground'>
                                 <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                                 <p>Analyzing...</p>
@@ -223,7 +223,7 @@ export default function QuranPage() {
                         )}
                     </div>
 
-                    {feedback && feedback.verseNumber === verse.verseNumber && (
+                    {feedback && feedback.verseNumber === verse.numberInSurah && (
                         <div className='space-y-4 pt-2'>
                             <Alert variant={feedback.isCorrect ? 'default' : 'destructive'}>
                                 <AlertTitle>{feedback.isCorrect ? "Excellent Recitation!" : "Needs Improvement"}</AlertTitle>

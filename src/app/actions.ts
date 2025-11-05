@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -7,9 +8,8 @@ import { chat } from '@/ai/flows/chat';
 import { textToBinary } from '@/ai/flows/text-to-binary';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectObjects } from '@/ai/flows/object-detector';
-import { getFullSura as getFullSuraFlow } from '@/ai/flows/get-full-sura';
 import { pronunciationCoach } from '@/ai/flows/pronunciation-coach';
-import type { Message } from '@/lib/types';
+import type { Message, Sura } from '@/lib/types';
 import { Role } from '@/lib/types';
 import type { DetectedObject } from '@/context/detection-context';
 
@@ -144,24 +144,62 @@ export const detectObjectsInImage = async (imageDataUri: string) => {
     }
 };
 
-const getFullSuraSchema = z.object({
-    suraName: z.string(),
-});
-
-export const getFullSura = async (suraName: string) => {
-    const validatedFields = getFullSuraSchema.safeParse({ suraName });
-    if (!validatedFields.success) {
-        return { error: 'Invalid Sura selection.' };
+export const getSuraFromAPI = async (suraNumber: number): Promise<{ sura?: Sura; error?: string; }> => {
+    const suraSchema = z.number().int().min(1).max(114);
+    const validation = suraSchema.safeParse(suraNumber);
+    if (!validation.success) {
+        return { error: 'Invalid Sura number.' };
     }
 
     try {
-        const result = await getFullSuraFlow(validatedFields.data);
-        return { sura: result };
-    } catch (error) {
+        // Fetch Arabic text and English translation in parallel
+        const [arabicRes, translationRes] = await Promise.all([
+            fetch(`http://api.alquran.cloud/v1/surah/${suraNumber}`),
+            fetch(`http://api.alquran.cloud/v1/surah/${suraNumber}/en.sahih`)
+        ]);
+
+        if (!arabicRes.ok || !translationRes.ok) {
+            throw new Error('Failed to fetch data from alquran.cloud');
+        }
+
+        const arabicData = await arabicRes.json();
+        const translationData = await translationRes.json();
+        
+        if (arabicData.code !== 200 || translationData.code !== 200) {
+            throw new Error(arabicData.data || 'Failed to retrieve Sura from API.');
+        }
+
+        const combinedSura: Sura = {
+            ...arabicData.data,
+            verses: arabicData.data.ayahs.map((ayah: any, index: number) => {
+                return {
+                    number: ayah.number,
+                    numberInSurah: ayah.numberInSurah,
+                    juz: ayah.juz,
+                    manzil: ayah.manzil,
+                    ruku: ayah.ruku,
+                    hizbQuarter: ayah.hizbQuarter,
+                    sajda: ayah.sajda,
+                    text: {
+                        arabic: ayah.text,
+                        english: translationData.data.ayahs[index].text,
+                    },
+                };
+            }),
+        };
+
+        // The API returns ayahs, but we call them verses internally
+        delete (combinedSura as any).ayahs;
+
+
+        return { sura: combinedSura };
+
+    } catch (error: any) {
         console.error(error);
-        return { error: 'Failed to retrieve the Sura at this time.' };
+        return { error: error.message || 'Failed to retrieve the Sura at this time.' };
     }
 };
+
 
 const pronunciationCoachSchema = z.object({
     userAudioDataUri: z.string(),
