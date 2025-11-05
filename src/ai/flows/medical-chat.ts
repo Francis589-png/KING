@@ -31,7 +31,7 @@ function toGenkitMessages(messages: z.infer<typeof FlowMessageSchema>[]) {
 const getMedicalTeachingTool = ai.defineTool(
     {
         name: 'getMedicalTeaching',
-        description: 'Get information about a specific medical ailment, including symptoms, natural remedies, and modern advice. Use this tool if the user asks a direct question about a condition.',
+        description: "Get information about a specific medical ailment, including symptoms, natural remedies, and modern advice. Use this tool if the user asks a direct question about a condition, for example 'What can you tell me about headaches?'. Do not use it for conversational questions like 'I have a headache'.",
         inputSchema: z.object({ topic: z.string() }),
         outputSchema: z.object({
             ailment: z.string(),
