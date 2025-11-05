@@ -8,5 +8,5 @@ import '@/ai/flows/chat.ts';
 import '@/ai/flows/text-to-binary.ts';
 import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/object-detector.ts';
-import '@/ai/flows/quranic-teaching.ts';
+import '@/ai/flows/get-full-sura.ts';
 import '@/ai/flows/pronunciation-coach.ts';

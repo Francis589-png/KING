@@ -7,7 +7,7 @@ import { chat } from '@/ai/flows/chat';
 import { textToBinary } from '@/ai/flows/text-to-binary';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectObjects } from '@/ai/flows/object-detector';
-import { getQuranicTeaching as getQuranicTeachingFlow } from '@/ai/flows/quranic-teaching';
+import { getFullSura as getFullSuraFlow } from '@/ai/flows/get-full-sura';
 import { pronunciationCoach } from '@/ai/flows/pronunciation-coach';
 import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
@@ -144,22 +144,22 @@ export const detectObjectsInImage = async (imageDataUri: string) => {
     }
 };
 
-const quranTeachingSchema = z.object({
-    sura: z.string().optional(),
+const getFullSuraSchema = z.object({
+    suraName: z.string(),
 });
 
-export const getQuranicTeaching = async (sura?: string) => {
-    const validatedFields = quranTeachingSchema.safeParse({ sura });
+export const getFullSura = async (suraName: string) => {
+    const validatedFields = getFullSuraSchema.safeParse({ suraName });
     if (!validatedFields.success) {
         return { error: 'Invalid Sura selection.' };
     }
 
     try {
-        const result = await getQuranicTeachingFlow(validatedFields.data);
-        return { teaching: result };
+        const result = await getFullSuraFlow(validatedFields.data);
+        return { sura: result };
     } catch (error) {
         console.error(error);
-        return { error: 'Failed to retrieve a teaching at this time.' };
+        return { error: 'Failed to retrieve the Sura at this time.' };
     }
 };
 

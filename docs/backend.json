@@ -96,6 +96,41 @@
         "isCorrect",
         "createdAt"
       ]
+    },
+    "sura": {
+        "title": "Sura",
+        "description": "Represents a full Sura (chapter) from the Quran.",
+        "type": "object",
+        "properties": {
+            "suraName": {
+                "type": "string",
+                "description": "The name of the Sura."
+            },
+            "introduction": {
+                "type": "string",
+                "description": "A scholarly introduction to the Sura."
+            },
+            "verses": {
+                "type": "array",
+                "description": "An array of all verses in the Sura.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "verseNumber": {
+                            "type": "number"
+                        },
+                        "arabicText": {
+                            "type": "string"
+                        },
+                        "englishTranslation": {
+                            "type": "string"
+                        }
+                    },
+                    "required": ["verseNumber", "arabicText", "englishTranslation"]
+                }
+            }
+        },
+        "required": ["suraName", "introduction", "verses"]
     }
   },
   "auth": {
