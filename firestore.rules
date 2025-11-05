@@ -8,5 +8,8 @@ service cloud.firestore {
     match /conversations/{messageId} {
       allow read, write: if true;
     }
+    match /medical-conversation/{messageId} {
+      allow read, write: if true;
+    }
   }
 }

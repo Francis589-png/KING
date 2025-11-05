@@ -11,3 +11,4 @@ import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/object-detector.ts';
 import '@/ai/flows/pronunciation-coach.ts';
 import '@/ai/flows/medical-teaching.ts';
+import '@/ai/flows/medical-chat.ts';

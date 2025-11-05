@@ -10,6 +10,7 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { detectObjects } from '@/ai/flows/object-detector';
 import { pronunciationCoach } from '@/ai/flows/pronunciation-coach';
 import { getMedicalTeaching } from '@/ai/flows/medical-teaching';
+import { medicalChat } from '@/ai/flows/medical-chat';
 import type { Message, Sura } from '@/lib/types';
 import { Role } from '@/lib/types';
 import type { DetectedObject } from '@/context/detection-context';
@@ -26,6 +27,15 @@ export const getAiResponse = async (messages: Omit<Message, 'id' | 'createdAt'>[
   const result = await chat({ messages: flowMessages, persona, detections });
   return result.message;
 };
+
+export const getMedicalChatResponse = async (messages: Omit<Message, 'id' | 'createdAt'>[]) => {
+    const flowMessages = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+    }));
+    const result = await medicalChat({ messages: flowMessages });
+    return result.message;
+}
 
 const knowledgeSchema = z.object({
   knowledge: z.string().min(10, { message: 'Knowledge base content is too short.' }),

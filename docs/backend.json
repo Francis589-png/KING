@@ -163,6 +163,12 @@
             "$ref": "#/entities/message"
         },
         "description": "Stores the history of chat messages."
+    },
+    "/medical-conversation/{messageId}": {
+        "schema": {
+            "$ref": "#/entities/message"
+        },
+        "description": "Stores the history of medical chat messages."
     }
   }
 }

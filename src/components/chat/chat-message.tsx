@@ -5,7 +5,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Message, Role } from '@/lib/types';
 import Image from 'next/image';
-import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PlayIcon, LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -13,15 +12,17 @@ import { getAudioForText } from '@/app/actions';
 
 interface ChatMessageProps {
   message: Message;
-  kingAvatar: string;
+  assistantAvatar: string;
   userAvatar: string;
+  assistantIcon: React.ReactNode;
   isLoading?: boolean;
 }
 
 export default function ChatMessage({
   message,
-  kingAvatar,
+  assistantAvatar,
   userAvatar,
+  assistantIcon,
   isLoading,
 }: ChatMessageProps) {
   const isAssistant = message.role === Role.assistant;
@@ -65,7 +66,7 @@ export default function ChatMessage({
       <div className="flex items-start gap-4">
         <Avatar className="h-10 w-10 border-2 border-primary/50">
           <div className="bg-primary flex h-full w-full items-center justify-center rounded-full text-primary-foreground">
-            <Icons.crown className="h-6 w-6" />
+            {assistantIcon}
           </div>
         </Avatar>
         <div className="space-y-2">
@@ -85,12 +86,12 @@ export default function ChatMessage({
       <Avatar className="h-10 w-10 border-2 border-primary/50">
         {isAssistant ? (
           <div className="bg-primary flex h-full w-full items-center justify-center rounded-full text-primary-foreground">
-            <Icons.crown className="h-6 w-6 text-accent" />
+            {assistantIcon}
           </div>
         ) : (
           userAvatar && <Image src={userAvatar} alt="User" width={40} height={40} data-ai-hint="person portrait" />
         )}
-        <AvatarFallback>{isAssistant ? 'K' : 'U'}</AvatarFallback>
+        <AvatarFallback>{isAssistant ? 'A' : 'U'}</AvatarFallback>
       </Avatar>
       <div
         className={cn(
