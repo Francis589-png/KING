@@ -19,8 +19,8 @@ interface StoredMessage { id: string; role: Role; content: string; createdAt: Ti
 interface ChatInterfaceProps { initialMessage: Omit<Message, 'id' | 'createdAt'>; getAiResponse: (messages: Omit<Message, 'id' | 'createdAt'>[]) => Promise<Omit<Message, 'id' | 'createdAt'>>; assistantAvatar: string; assistantIcon: React.ReactNode; storageKey: string; }
 
 export default function ChatInterface({ initialMessage, getAiResponse, assistantAvatar, assistantIcon, storageKey }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([{...initialMessage, id:'initial', createdAt:new Date()}]);
-  const [input, setInput] = useState(''); const [isLoading,setIsLoading]=useState(false); const [voiceBusy,setVoiceBusy]=useState(false);
+  const [messages, setMessages] = useState<Message[]>([{...initialMessage,id:'initial',createdAt:new Date()}]);
+  const [input,setInput]=useState(''); const [isLoading,setIsLoading]=useState(false); const [voiceBusy,setVoiceBusy]=useState(false);
   const viewportRef=useRef<HTMLDivElement>(null); const firestore=useFirestore(); const audioRef=useRef<HTMLAudioElement|null>(null);
   const conversationCol=useMemo(()=>firestore?collection(firestore,storageKey) as CollectionReference<StoredMessage>:null,[firestore,storageKey]);
   const conversationQuery=useMemo(()=>conversationCol?query(conversationCol,orderBy('createdAt','asc')):null,[conversationCol]);
