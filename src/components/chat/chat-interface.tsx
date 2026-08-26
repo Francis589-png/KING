@@ -5,6 +5,7 @@ import type { Message } from '@/lib/types';
 import { Role } from '@/lib/types';
 import ChatMessage from './chat-message';
 import ChatInput from './chat-input';
+import { getAudioForText } from '@/app/actions';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -38,8 +39,10 @@ export default function ChatInterface({
   const [messages, setMessages] = useState<Message[]>([{...initialMessage, id: 'initial', createdAt: new Date()}]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const firestore = useFirestore();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const conversationCol = useMemo(() => {
       if (!firestore) return null;
@@ -65,6 +68,13 @@ export default function ChatInterface({
         }
     }
   }, [storedMessages, initialMessage]);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, []);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -80,32 +90,50 @@ export default function ChatInterface({
     } catch (error) {
         console.error("Error saving message: ", error);
     }
-  }
+  };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const askKing = async (text: string, speakResponse = false) => {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
 
     const userMessage: Omit<Message, 'id'|'createdAt'> = {
       role: Role.user,
-      content: input,
+      content: trimmed,
     };
-    
-    // Optimistically update the UI
+
     const tempId = new Date().toISOString();
     setMessages((prev) => [...prev, { ...userMessage, id: tempId, createdAt: new Date() }]);
     saveMessage(userMessage);
     setInput('');
     setIsLoading(true);
+    if (speakResponse) setVoiceBusy(true);
 
     try {
-      // We pass the messages without id/createdAt to the AI
-      const currentMessagesForAi: Omit<Message, 'id'|'createdAt'>[] = [...messages, {...userMessage, id: tempId, createdAt: new Date()}].map(({id, createdAt, ...rest}) => rest);
-      const aiMessageContent = await getAiResponse(currentMessagesForAi);
-      
-      // Save the AI message to Firestore, which will trigger the onSnapshot listener to update the UI
-      saveMessage(aiMessageContent);
+      const currentMessagesForAi: Omit<Message, 'id'|'createdAt'>[] = [
+        ...messages,
+        { ...userMessage, id: tempId, createdAt: new Date() },
+      ].map(({id, createdAt, ...rest}) => rest);
+      const aiMessage = await getAiResponse(currentMessagesForAi);
+      saveMessage(aiMessage);
 
+      if (speakResponse) {
+        const audioResult = await getAudioForText(aiMessage.content);
+        if (audioResult.audio) {
+          audioRef.current?.pause();
+          const audio = new Audio(audioResult.audio);
+          audioRef.current = audio;
+          audio.onended = () => setVoiceBusy(false);
+          audio.onerror = () => setVoiceBusy(false);
+          try {
+            await audio.play();
+          } catch (error) {
+            console.error('Unable to play voice response:', error);
+            setVoiceBusy(false);
+          }
+        } else {
+          setVoiceBusy(false);
+        }
+      }
     } catch (error) {
       console.error('Failed to get AI response:', error);
       const errorMessage: Message = {
@@ -115,9 +143,19 @@ export default function ChatInterface({
         createdAt: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
+      setVoiceBusy(false);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await askKing(input);
+  };
+
+  const handleVoiceTranscript = async (text: string) => {
+    await askKing(text, true);
   };
   
   useEffect(() => {
@@ -128,7 +166,6 @@ export default function ChatInterface({
       });
     }
   }, [messages]);
-
 
   return (
     <Card className="w-full max-w-4xl flex flex-col shadow-2xl flex-1">
@@ -144,7 +181,7 @@ export default function ChatInterface({
                   assistantIcon={assistantIcon}
                 />
               ))}
-              {isLoading && (
+              {(isLoading || voiceBusy) && (
                 <ChatMessage
                   message={{
                     id: 'loading',
@@ -165,7 +202,8 @@ export default function ChatInterface({
             handleSubmit={handleSubmit}
             input={input}
             handleInputChange={handleInputChange}
-            isLoading={isLoading || messagesLoading}
+            onVoiceTranscript={handleVoiceTranscript}
+            isLoading={isLoading || messagesLoading || voiceBusy}
           />
         </div>
       </CardContent>
