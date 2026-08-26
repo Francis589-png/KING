@@ -6,8 +6,8 @@ import { FirebaseClientProvider } from '@/firebase';
 import { DetectionProvider } from '@/context/detection-context';
 
 export const metadata: Metadata = {
-  title: "King's Court",
-  description: "Chat with King A.J., your royal AI assistant.",
+  title: 'JUSU AI',
+  description: 'JUSU AI — your intelligent AI assistant with text and live voice conversation.',
 };
 
 export default function RootLayout({

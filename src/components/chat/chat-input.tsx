@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send } from 'lucide-react';
 import { useRef, type FormEvent } from 'react';
+import LiveVoiceButton from './live-voice-button';
 
 type ChatInputProps = {
   handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
@@ -11,6 +12,7 @@ type ChatInputProps = {
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>
   ) => void;
+  onVoiceTranscript: (text: string) => void;
   isLoading: boolean;
 };
 
@@ -18,6 +20,7 @@ export default function ChatInput({
   handleSubmit,
   input,
   handleInputChange,
+  onVoiceTranscript,
   isLoading,
 }: ChatInputProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -41,19 +44,21 @@ export default function ChatInput({
           }
         }}
         placeholder="Ask the king a question..."
-        className="pr-16 text-sm md:text-base resize-none"
+        className="pr-24 text-sm md:text-base resize-none"
         rows={1}
         autoFocus
       />
-      <Button
-        type="submit"
-        size="icon"
-        className="absolute right-2 top-1/2 -translate-y-1/2"
-        disabled={isLoading || !input.trim()}
-        aria-label="Send message"
-      >
-        <Send />
-      </Button>
+      <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+        <LiveVoiceButton onTranscript={onVoiceTranscript} disabled={isLoading} />
+        <Button
+          type="submit"
+          size="icon"
+          disabled={isLoading || !input.trim()}
+          aria-label="Send message"
+        >
+          <Send />
+        </Button>
+      </div>
     </form>
   );
 }
