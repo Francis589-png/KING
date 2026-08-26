@@ -5,6 +5,7 @@ import { Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type SpeechRecognitionEventLike = Event & {
+  resultIndex: number;
   results: {
     [index: number]: {
       isFinal: boolean;
@@ -70,7 +71,7 @@ export default function LiveVoiceButton({ onTranscript, disabled = false }: Live
     recognition.lang = navigator.language || 'en-US';
 
     recognition.onresult = (event) => {
-      for (let index = 0; index < event.results.length; index += 1) {
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
         const result = event.results[index];
         if (result.isFinal) {
           const transcript = result[0]?.transcript?.trim();
